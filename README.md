@@ -7,7 +7,7 @@ with
 OpenCV 3.0 and python 3.3
 
 
-In the skandal-master directory, open a terminal
+In the Skandal3.0-master directory, open a terminal
 
  ./scan
 
