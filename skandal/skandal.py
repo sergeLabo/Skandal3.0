@@ -24,7 +24,6 @@
 
 
 import os, sys
-import threading
 from config import load_config, get_available_name, save_config
 from capture import Capture
 from process import Process
@@ -65,9 +64,11 @@ def clear():
         c = os.system('clear')
 
 def menu_terminal():
+    name = name_input()
+    save_config("scan", "name", name)
+    # Create directory, variable with this name
     conf = load_config("./scan.ini")
     skandal = Skandal()
-    name_input(conf)
     while True:
         clear()
         print("Your project is {0}".format(conf["name"]))
@@ -111,7 +112,7 @@ def menu_terminal():
                 is_valid = False
                 print("Invalid number. Try again...")
 
-def name_input(cf):
+def name_input():
     clear()
     is_valid = 0
     while not is_valid :
@@ -122,10 +123,8 @@ def name_input(cf):
             print(("'%s' is not a valid name." % e.args[0].split(": ")[1]))
     name = get_available_name(choice)
     print("Your project name is {0}".format)
-    cf["name"] = name
-    save_config("scan", "name", name)
-    # Create directory, variable with this name
-    conf = load_config("./scan.ini")
+    return name
+
 
 if __name__=='__main__':
     menu_terminal()

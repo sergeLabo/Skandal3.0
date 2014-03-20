@@ -89,6 +89,7 @@ def directory_management(name):
     try:
         os.mkdir(Skandal + "/work")
     except:
+        print("Directory {0} exist".format(Skandal + "/work"))
         pass
     # Master directories
     all_dir = [ "/image",
@@ -100,6 +101,7 @@ def directory_management(name):
         try:
             os.mkdir(Skandal + "/work" + d)
         except:
+            print("Directory {0} exist".format(Skandal + "/work" + d))
             pass
 
     # Sub-directories
@@ -108,11 +110,16 @@ def directory_management(name):
         try:
             os.mkdir(sub_dir)
         except:
+            print("Directory {0} exist".format(sub_dir))
             pass
 
     img_dir = Skandal + "/work" + "/image/p_" + name
     txt_dir = Skandal + "/work" + "/txt/p_" + name
     ply_dir = Skandal + "/work" + "/ply"
+    print("\n  Directory for this work:")
+    print("image: {0}".format(img_dir))
+    print("txt: {0}".format(txt_dir))
+    print("ply: {0}\n".format(ply_dir))
 
     return img_dir, txt_dir ,ply_dir
 
@@ -131,11 +138,11 @@ def save_config(section, key, value):
 
 
 if __name__=='__main__':
-    print(os.path.dirname(os.getcwd()+"config.py"))
-    print(os.getcwd()[:-8])
-    get_available_name('_rien01DFRE@')
+    ##print(os.path.dirname(os.getcwd()+"config.py"))
+    ##print(os.getcwd()[:-8])
+    ##get_available_name('_rien01DFRE@')
     conf = load_config("./scan.ini")
     for key, value in list(conf.items()):
         print((key, value))
-    print(conf["webcam"])
+    #print(conf["webcam"])
     save_config(conf["webcam"], "brightness", 33)
