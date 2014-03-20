@@ -4,7 +4,7 @@ Tested on Linux Mint 15
 
 with
 
-OpenCV 3.0 and python 3.3
+OpenCV 3.0 and python 3.0
 
 
 In the Skandal3.0-master directory, open a terminal

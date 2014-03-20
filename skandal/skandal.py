@@ -90,7 +90,7 @@ def menu_terminal():
         is_valid = False
         while not is_valid :
             try :
-                choice = int(input('Enter your choice [0-6] : '))
+                choice = int(raw_input('Enter your choice [0-6] : '))
                 is_valid = True
             except ValueError as e :
                 print("This is not a valid integer.")
@@ -116,7 +116,7 @@ def name_input(cf):
     is_valid = 0
     while not is_valid :
         try :
-            choice = input('\n\n  Enter your project name :  ')
+            choice = raw_input('\n\n  Enter your project name :  ')
             is_valid = 1
         except ValueError as e :
             print(("'%s' is not a valid name." % e.args[0].split(": ")[1]))

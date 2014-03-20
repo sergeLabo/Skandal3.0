@@ -24,7 +24,7 @@
 
 import os
 import ast
-from configparser import SafeConfigParser
+from ConfigParser import SafeConfigParser
 import numpy as np
 
 def load_config(ini):
@@ -67,7 +67,6 @@ def load_config(ini):
 def get_available_name(name):
     '''From raw name, get a name available to file name.'''
     name = name.encode('ascii', errors='ignore')
-    name = str(name)[1:]
     # TODO revoirpour accepter nombre si pas en premier
     name = "".join(c for c in name if c.isalpha())
     name = name[:12]
