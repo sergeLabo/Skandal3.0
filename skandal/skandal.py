@@ -67,8 +67,8 @@ def menu_terminal():
     name = name_input()
     save_config("scan", "name", name)
     # Create directory, variable with this name
-    conf = load_config("./scan.ini")
     skandal = Skandal()
+    conf = skandal.cf
     while True:
         clear()
         print("Your project is {0}".format(conf["name"]))
@@ -114,15 +114,15 @@ def menu_terminal():
 
 def name_input():
     clear()
-    is_valid = 0
+    is_valid = False
     while not is_valid :
         try :
             choice = input('\n\n  Enter your project name :  ')
-            is_valid = 1
+            is_valid = True
         except ValueError as e :
             print(("'%s' is not a valid name." % e.args[0].split(": ")[1]))
     name = get_available_name(choice)
-    print("Your project name is {0}".format)
+    print("\n\nYour project name is {0}\n\n".format(name))
     return name
 
 

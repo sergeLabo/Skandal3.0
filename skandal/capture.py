@@ -25,6 +25,7 @@
 
 from time import time, sleep
 import cv2
+import numpy as np
 from config import load_config, save_config
 from cam_settings import apply_all_cam_settings, apply_cam_setting
 from arduino import Arduino
@@ -42,13 +43,13 @@ class Capture():
         self.capture.set(3, self.width)
         self.capture.set(4, self.height)
         apply_all_cam_settings(cf)
-
         self.arduino = init_arduino(self.cf)
 
     def set_cam_position(self):
         create_trackbar_raw()
         create_trackbar_gray()
         current_set = set_init_trackbar(self.cf)
+
         while True:
             ret, frame = self.capture.read()
             if ret:
@@ -63,12 +64,11 @@ class Capture():
                 laser_D_on_off(self.arduino, current_set, sw)
                 current_set = br, co, sh, fo, sw, ph, pv
                 # wait for ESC key to exit
-                k = cv2.waitKey(33)
-                if k == 1048603:
-                    cv2.destroyAllWindows()
+                if cv2.waitKey(33) == 1048603:
                     break
             else:
                 print("Webcam is busy")
+
         cv2.destroyAllWindows()
 
     def shot(self):
@@ -308,5 +308,5 @@ def nothing(x):
 if __name__=='__main__':
     conf = load_config("./scan.ini")
     cap = Capture(conf)
-    #cap.set_cam_position()
-    cap.shot()
+    cap.set_cam_position()
+    #cap.shot()
