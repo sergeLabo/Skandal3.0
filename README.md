@@ -29,8 +29,8 @@ With a webcam and without Arduino Card
 
 
 ## Requirements
-    - python3
-    - OpenCV 3.0
+    * python3
+    * OpenCV 3.0
 
 
 ## Contributing
@@ -40,11 +40,11 @@ http://wiki.labomedia.org/index.php/Discussion:Laser_Scanner_3D_SkanDal
 
 ## Credits
 Merci à:
-    - Jeremy avec qui je me suis lancé dans cette aventure
-    - Olivier pour son enthousiasme
-    - Labomedia
-    - Alexandre pour ses conseils techniques de programmation
-    - Romain qui nous a appris qu'il fallait faire un Readme plein de poésie
+    * Jeremy avec qui je me suis lancé dans cette aventure
+    * Olivier pour son enthousiasme
+    * Labomedia
+    * Alexandre pour ses conseils techniques de programmation
+    * Romain qui nous a appris qu'il fallait faire un Readme plein de poésie
 Je continuerai la liste si je reçois un Oscar python dans la catégorie Vétéran.
 
 
@@ -54,5 +54,5 @@ See the bundled LICENSE file for details.
 
 
 ## Bugs:
-- OpenCV Windows doesn't close with cv2.destroyAllWindows()
+* OpenCV Windows doesn't close with cv2.destroyAllWindows()
     but the terminal is active and working.
