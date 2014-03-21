@@ -20,7 +20,9 @@ http://wiki.labomedia.org/index.php/Cat%C3%A9gorie:Skandal
 
 ## Installation
 Tested on Linux Mint 15
+
 See:
+
 http://wiki.labomedia.org/index.php/Laser_Scanner_3D_SkanDal_Logiciel#Installation_pour_python_3_et_OpenCV_3.0
 
 
@@ -29,8 +31,9 @@ With a webcam and without Arduino Card
 
 
 ## Requirements
-    * python3
-    * OpenCV 3.0
+* python3
+
+* OpenCV 3.0
 
 
 ## Contributing
@@ -40,11 +43,17 @@ http://wiki.labomedia.org/index.php/Discussion:Laser_Scanner_3D_SkanDal
 
 ## Credits
 Merci à:
+
     * Jeremy avec qui je me suis lancé dans cette aventure
+
     * Olivier pour son enthousiasme
+
     * Labomedia
+
     * Alexandre pour ses conseils techniques de programmation
+
     * Romain qui nous a appris qu'il fallait faire un Readme plein de poésie
+
 Je continuerai la liste si je reçois un Oscar python dans la catégorie Vétéran.
 
 
