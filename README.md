@@ -44,15 +44,15 @@ http://wiki.labomedia.org/index.php/Discussion:Laser_Scanner_3D_SkanDal
 ## Credits
 Merci à:
 
-    * Jeremy avec qui je me suis lancé dans cette aventure
+* Jeremy avec qui je me suis lancé dans cette aventure
 
-    * Olivier pour son enthousiasme
+* Olivier pour son enthousiasme
 
-    * Labomedia
+* Labomedia
 
-    * Alexandre pour ses conseils techniques de programmation
+* Alexandre pour ses conseils techniques de programmation
 
-    * Romain qui nous a appris qu'il fallait faire un Readme plein de poésie
+* Romain qui nous a appris qu'il fallait faire un Readme plein de poésie
 
 Je continuerai la liste si je reçois un Oscar python dans la catégorie Vétéran.
 
