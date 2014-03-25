@@ -48,27 +48,29 @@ class Capture():
     def set_cam_position(self):
         create_trackbar_raw()
         create_trackbar_gray()
-        current_set = set_init_trackbar(self.cf)
+        # set = 0 br, 1 co, 2 sh, 3 fo, 4 sw, 5 ph, 6 pv
+        old_set = set_init_trackbar(self.cf)
 
         while True:
             ret, frame = self.capture.read()
             if ret:
                 # Display original image
                 ph, pv = display_raw(frame, self.width, self.height, self.cf)
-                self.cf["persp_h"] = ph
-                self.cf["persp_v"] = pv
                 # Display grayscale image
                 br, co, sh, fo, sw = display_gray(frame, self.width,
                                                                 self.height)
-                apply_cam_change(self.cf, current_set, br, co, sh, fo, ph, pv)
-                laser_D_on_off(self.arduino, current_set, sw)
-                current_set = br, co, sh, fo, sw, ph, pv
-                # wait for ESC key to exit
-                if cv2.waitKey(33) == 1048603:
+                new_set = br, co, sh, fo, sw, ph, pv
+                # Apply change and update conf
+                self.cf = apply_conf_change(self.cf, old_set, new_set)
+                # Update laser
+                laser_D_on_off(self.arduino, old_set, sw)
+                old_set = new_set
+                # wait for esc key to exit
+                key = np.int16(cv2.waitKey(33))
+                if key == 27:
                     break
             else:
                 print("Webcam is busy")
-
         cv2.destroyAllWindows()
 
     def shot(self):
@@ -101,14 +103,14 @@ class Capture():
                                 frame, nb_shot, way, self.arduino)
                         else:
                             break
-                # wait for ESC key to exit
-                k = cv2.waitKey(33)
-                if k == 1048603:
+                # wait for esc key to exit
+                key = np.int16(cv2.waitKey(33))
+                if key == 27:
                     break
             else:
                 print("Webcam is busy")
         print("\n{0} good shot in {1} seconds".format(\
-                self.steps * (self.double + 1), int(time() - top)))
+                nb_shot * (self.double + 1), int(time() - top)))
         cv2.destroyAllWindows()
 
     def close(self):
@@ -116,6 +118,32 @@ class Capture():
             set_laser("off", self.arduino)
         cv2.destroyAllWindows()
         self.capture.release()
+
+def apply_conf_change(cf, old_set, new_set):
+    # set = 0 br, 1 co, 2 sh, 3 fo, 4 sw, 5 ph, 6 pv
+    if old_set[0] != new_set[0]:
+        cf["brightness"] = new_set[0]
+        apply_cam_setting("Brightness", new_set[0])
+        save_config(cf["webcam"], "brightness", new_set[0])
+    if old_set[1] != new_set[1]:
+        cf["contrast"] = new_set[1]
+        apply_cam_setting("Contrast", new_set[1])
+        save_config(cf["webcam"], "contrast", new_set[1])
+    if old_set[2] != new_set[2]:
+        cf["sharpness"] = new_set[2]
+        apply_cam_setting("Sharpness", new_set[2])
+        save_config(cf["webcam"], "sharpness", new_set[2])
+    if old_set[3] != new_set[3]:
+        cf["focus_abs"] = new_set[3]
+        apply_cam_setting("Focus (absolute)", new_set[3])
+        save_config(cf["webcam"], "focus_abs", new_set[3])
+    if old_set[5] != new_set[5]:
+        cf["persp_h"] = new_set[5]
+        save_config("scan", "persp_h", new_set[5])
+    if old_set[6] != new_set[6]:
+        cf["persp_v"] = new_set[6]
+        save_config("scan", "persp_v", new_set[6])
+    return cf
 
 def create_trackbar_raw():
     cv2.namedWindow("Raw Webcam")
@@ -142,13 +170,12 @@ def set_init_trackbar(cf):
     co = cf["contrast"]
     sh = cf["sharpness"]
     fo = cf["focus_abs"]
-    ex = cf["exposure_abs"]
     sw = 0
     cv2.setTrackbarPos("Brightness", "Gray Scale", br)
     cv2.setTrackbarPos("Contrast", "Gray Scale", co)
     cv2.setTrackbarPos("Sharpness", "Gray Scale", sh)
     cv2.setTrackbarPos("Focus (absolute)", "Gray Scale", fo)
-    return br, co, sh, fo, ex, sw, ph, pv
+    return br, co, sh, fo, sw, ph, pv
 
 def display_raw(im, width, height, cf):
     '''k = coeff multiplicateur'''
@@ -179,7 +206,7 @@ def display_gray(im, width, height):
     br = cv2.getTrackbarPos("Brightness", "Gray Scale")
     co = cv2.getTrackbarPos("Contrast", "Gray Scale")
     sh = cv2.getTrackbarPos("Sharpness", "Gray Scale")
-    fo = cv2.getTrackbarPos("Focus", "Gray Scale")
+    fo = cv2.getTrackbarPos("Focus (absolute)", "Gray Scale")
     switch = '0: 1 laser \n1: 2 laser'
     sw = cv2.getTrackbarPos(switch, "Gray Scale")
     # Display
@@ -232,8 +259,8 @@ def write_shot(cf, img, nb_shot, way):
     cv2.imwrite(name, img)
     print(("Shot {1} {0} taken".format(nb_shot, way)))
 
-def laser_D_on_off(arduino, current_set, sw):
-    if current_set[0] != sw:
+def laser_D_on_off(arduino, old_set, sw):
+    if old_set[0] != sw:
         if sw == 0:
             # Right laser off
             arduino .write('C')
@@ -246,24 +273,6 @@ def init_arduino(cf):
     # Left Laser on
     arduino.write('G')
     return arduino
-
-def apply_cam_change(cf, current_set, br, co, sh, fo, ph, pv):
-    if current_set[0] != br:
-        apply_cam_setting("Brightness", br)
-        save_config(cf["webcam"], "brightness", br)
-    if current_set[1] != co:
-        apply_cam_setting("Contrast", co)
-        save_config(cf["webcam"], "contrast", co)
-    if current_set[2] != sh:
-        apply_cam_setting("Sharpness", sh)
-        save_config(cf["webcam"], "sharpness", co)
-    if current_set[3] != fo:
-        apply_cam_setting("Focus (absolute)", fo)
-        save_config(cf["webcam"], "focus_abs", co)
-    if current_set[5] != ph:
-        save_config("scan", "persp_h", ph)
-    if current_set[6] != pv:
-        save_config("scan", "persp_v", pv)
 
 def add_lines(im, width, height, cf):
     h = height
@@ -309,4 +318,4 @@ if __name__=='__main__':
     conf = load_config("./scan.ini")
     cap = Capture(conf)
     cap.set_cam_position()
-    #cap.shot()
+    cap.shot()

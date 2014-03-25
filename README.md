@@ -12,6 +12,7 @@ In the Skandal3.0-master directory, open a terminal
 
  or double clic on scan, Run in Terminal
 
+Press Esc key in active window to quit and get the terminal.
 
 ## Documentation
 On the Labomedia wiki

@@ -127,15 +127,18 @@ def directory_management(name):
 
 def save_config(section, key, value):
     '''Save config in *.ini file with section, key, value.'''
-    config = SafeConfigParser()
-    config.read("./scan.ini")
     if isinstance(value, int):
+        val = str(value)
+    if isinstance(value, float):
         val = str(value)
     if isinstance(value, str):
         val = '"' + value + '"'
+
+    config = SafeConfigParser()
+    config.read("./scan.ini")
     config.set(section, key, val)
     with open("./scan.ini", 'w') as f:
        config.write(f)
     f.close()
     print("\n{1} = {2} saved in scan.ini in section {0}\n".format(section,
-                                                                key, value))
+                                                                key, val))
