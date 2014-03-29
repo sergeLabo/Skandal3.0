@@ -203,7 +203,7 @@ def compute_3D(cf, index, points_L, points_R, points):
 
     # Time start in this function
     tframe = time()
-    ############################ TODO j'aime pas!
+    ############################ TODO use **kwargs ??
     height = cf["height"]
     width = cf["width"]
     scale = cf["scale"]
@@ -220,8 +220,11 @@ def compute_3D(cf, index, points_L, points_R, points):
     # Perspective correction
     ph = cf["persp_h"]
     pv = cf["persp_v"]
+    # Motor axis vertical position
+    ma = cf["motor_axis"]
+    # Alpha
     tg_alpha = 0.2
-    if ph != 0:
+    if ph != 0: # No 0 div
         tg_alpha = pv / ph
     print("Perspective: Tangente alpha = {0}".format(tg_alpha))
     ############################
@@ -378,5 +381,5 @@ def nothing(x):
 if __name__=='__main__':
     conf = load_config("./scan.ini")
     proc = Process(conf)
-    proc.get_laser_line()
+    #proc.get_laser_line()
     proc.get_PLY()

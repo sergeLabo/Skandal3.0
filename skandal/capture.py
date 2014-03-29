@@ -48,18 +48,19 @@ class Capture():
     def set_cam_position(self):
         create_trackbar_raw()
         create_trackbar_gray()
-        # set = 0 br, 1 co, 2 sh, 3 fo, 4 sw, 5 ph, 6 pv
+        # set = 0 br, 1 co, 2 sh, 3 fo, 4 sw, 5 ph, 6 pv, 7 ma
         old_set = set_init_trackbar(self.cf)
 
         while True:
             ret, frame = self.capture.read()
             if ret:
                 # Display original image
-                ph, pv = display_raw(frame, self.width, self.height, self.cf)
+                ph, pv, ma = display_raw(frame, self.width, self.height,
+                                                                    self.cf)
                 # Display grayscale image
                 br, co, sh, fo, sw = display_gray(frame, self.width,
                                                                 self.height)
-                new_set = br, co, sh, fo, sw, ph, pv
+                new_set = br, co, sh, fo, sw, ph, pv, ma
                 # Apply change and update conf
                 self.cf = apply_conf_change(self.cf, old_set, new_set)
                 # Update laser
@@ -120,7 +121,7 @@ class Capture():
         self.capture.release()
 
 def apply_conf_change(cf, old_set, new_set):
-    # set = 0 br, 1 co, 2 sh, 3 fo, 4 sw, 5 ph, 6 pv
+    # set = 0 br, 1 co, 2 sh, 3 fo, 4 sw, 5 ph, 6 pv, 7 ma
     if old_set[0] != new_set[0]:
         cf["brightness"] = new_set[0]
         apply_cam_setting("Brightness", new_set[0])
@@ -143,13 +144,15 @@ def apply_conf_change(cf, old_set, new_set):
     if old_set[6] != new_set[6]:
         cf["persp_v"] = new_set[6]
         save_config("scan", "persp_v", new_set[6])
+    if old_set[7] != new_set[7]:
+        cf["motor_axis"] = new_set[7]
+        save_config("scan", "motor_axis", new_set[7])
     return cf
 
 def create_trackbar_raw():
     cv2.namedWindow("Raw Webcam")
-    # TODO le maxi dépend de cf["width"]
+    cv2.createTrackbar("Motor Axis", "Raw Webcam", 0, 200, nothing)
     cv2.createTrackbar("Perspective H", "Raw Webcam", 0, 400, nothing)
-    # TODO le maxi = table_center_height
     cv2.createTrackbar("Perspective V", "Raw Webcam", 0, 100, nothing)
 
 def create_trackbar_gray():
@@ -164,8 +167,10 @@ def create_trackbar_gray():
 def set_init_trackbar(cf):
     ph = cf["persp_h"]
     pv = cf["persp_v"]
+    ma = cf["motor_axis"]
     cv2.setTrackbarPos("Perspective H", "Raw Webcam", ph)
     cv2.setTrackbarPos("Perspective V", "Raw Webcam", pv)
+    cv2.setTrackbarPos("Motor Axis", "Raw Webcam", ma)
     br = cf["brightness"]
     co = cf["contrast"]
     sh = cf["sharpness"]
@@ -175,13 +180,14 @@ def set_init_trackbar(cf):
     cv2.setTrackbarPos("Contrast", "Gray Scale", co)
     cv2.setTrackbarPos("Sharpness", "Gray Scale", sh)
     cv2.setTrackbarPos("Focus (absolute)", "Gray Scale", fo)
-    return br, co, sh, fo, sw, ph, pv
+    return br, co, sh, fo, sw, ph, pv, ma
 
 def display_raw(im, width, height, cf):
     '''k = coeff multiplicateur'''
     # get current positions of trackbars
     ph = cv2.getTrackbarPos("Perspective H", "Raw Webcam")
-    pv = cv2.getTrackbarPos("Perspective V","Raw Webcam")
+    pv = cv2.getTrackbarPos("Perspective V", "Raw Webcam")
+    ma = cv2.getTrackbarPos("Motor Axis", "Raw Webcam")
     # Display with resize
     k = 1
     w = int(width * k)
@@ -199,7 +205,7 @@ def display_raw(im, width, height, cf):
     im = add_lines(im, W, H, cf)
     cv2.imshow("Raw Webcam", im)
     #cv2.moveWindow("Raw Webcam", 0, 0)
-    return ph, pv
+    return ph, pv, ma
 
 def display_gray(im, width, height):
     # get current positions of trackbars
@@ -277,22 +283,28 @@ def init_arduino(cf):
 def add_lines(im, width, height, cf):
     h = height
     w = width
+    ma = cf["motor_axis"]
+
     # Horizontal lines
-    for r in [64, 109, 113]:
-        s = int(r*h/128)
-        cv2.line(im, (0, s), (w, s), (0, 0, 0), 1)
+    # Middle
+    s = int(h/2)
+    cv2.line(im, (0, s), (w, s), (0, 0, 0), 1)
+    # Motor axis green
+    mag = h - ma
+    cv2.line(im, (0, mag), (w, mag), (0, 255, 0), 1)
+
     # Vertical line
     t = int(w/2)
     cv2.line(im, (t, 0), (t, h), (0, 0, 0), 1)
 
     # Perspective lines
-    # Perspective Horizontal set with vertical line
+    # Perspective Horizontal set with vertical red line
     table_center_height = 100
     i = int(h - table_center_height + cf["persp_v"])
-    cv2.line(im, (0, i), (w, i), (255, 255, 0), 1)
-    # Perspective Vertical set with horizontal line
+    cv2.line(im, (0, i), (w, i), (255, 0, 0), 1)
+    # Perspective Vertical set with horizontal blue line
     j = int(w/2 - cf["persp_h"])
-    cv2.line(im, (j, 0), (j, h), (0, 255, 255), 1)
+    cv2.line(im, (j, 0), (j, h), (0, 0, 255), 1)
 
     # Little lines
     for t in [2, 16, 26]:
@@ -318,4 +330,4 @@ if __name__=='__main__':
     conf = load_config("./scan.ini")
     cap = Capture(conf)
     cap.set_cam_position()
-    cap.shot()
+    #cap.shot()
