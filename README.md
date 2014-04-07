@@ -1,9 +1,6 @@
 Skandal3.0
 ==========
 
-Not updated: use only the 2.7 version
-
-
 Skandal is a 3D Laser Scanner to create STL file from a small real object
 and print it on a 3D Printer.
 
@@ -67,5 +64,5 @@ See the bundled LICENSE file for details.
 
 
 ## Bugs:
-* OpenCV Windows doesn't close with cv2.destroyAllWindows()
-    but the terminal is active and working.
+* Often, OpenCV Windows doesn't close with cv2.destroyAllWindows()
+    so a small image is open to close the cam windows

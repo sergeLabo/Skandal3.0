@@ -53,6 +53,12 @@ class Process():
         self.ax = None
         self.sgray = None
 
+    def set_split_on(self):
+        self.split = True
+
+    def set_split_off(self):
+        self.split = False
+
     def get_laser_line(self):
         '''Get laser line  in all image,
         save founded points in txt file in txt directory.
@@ -66,30 +72,31 @@ class Process():
 
         # Create a black image
         blackim = np.zeros((self.height, self.width, 3), np.uint8)
-        # Empty queue
-        queue = np.zeros((1, 2))
 
         cv2.namedWindow('Laser Line')
         create_trackbar_laser_line(self.cf)
-        current_set = self.cf["gray_max"], 0
+        old_set = self.cf["gray_max"]
 
         im_num = -1
         while im_num < nb - 1:
             im_num += 1
             # Process image
-            x_array, y_array = get_one_laser_line(self.cf, im_num)
+            x_array, y_array, no_image = get_one_laser_line(self.cf, im_num)
+            if no_image:
+                break
             # Display lines
-            im, queue = lines_image(x_array, y_array, queue, blackim)
-            self.gray_max, sw = display_laser_line(self.cf, im)
-            im_num = apply_gray_change(self.cf, current_set, self.gray_max,
-                                                                sw, im_num)
+            im = lines_image(x_array, y_array, blackim)
+            new_set = display_laser_line(self.cf, im)
+            im_num, self.cf = apply_gray_change(self.cf, old_set, new_set,
+                                                                    im_num)
+            old_set = new_set
             # wait for ESC key to exit
             k = cv2.waitKey(33)
             if k == 1048603:
                 break
 
         cv2.destroyAllWindows()
-        print(("{0} shot calculated in {1} seconds".format(nb,
+        print(("{0} shot calculated in {1} seconds\n".format(im_num,
                                                     int(time() - top))))
 
     def get_PLY(self):
@@ -104,40 +111,45 @@ class Process():
         for index in range(self.steps):
             # Left frame at index
             file_L = self.cf["txt_dir"] + "/t_" +  str(index) + ".txt"
-            points_L = np.loadtxt(file_L)
-            if points_L == None:
-                print("No {0} file".format(file_L))
+            try:
+                points_L = np.loadtxt(file_L)
+            except:
+                print("No {0} txt file\n".format(self.cf["a_name"]))
+                break
             # Empty array
             p_empty = np.asarray([]).reshape(0, 2)
-            # two run
+
+            # Laser left and right: double = 1
             if self.double:
                 # Right frame 50 frame after
                 indexR = self.steps + decal + index
-                if indexR >= 2*self.steps:
+                if indexR >= 2 * self.steps:
                     indexR = indexR - self.steps
                 file_R = self.cf["txt_dir"] + "/t_" +  str(indexR) + ".txt"
                 # Erase first
-                points_R = np.loadtxt(file_R)
-                if points_R == None:
-                    print("No {0} file".format(file_R))
+                try:
+                    points_R = np.loadtxt(file_R)
+                except:
+                    print("No {0} txt file\n".format(self.cf["a_name"]))
+                    break
 
                 # Compute the two frames
-                if not self.split:
-                    # Index is very important
-                    # to concatenate the two matching images
+                if not self.split: # "split" = 0
+                    # Indexes must match to concatenate the two matching images
                     print(("Concatenate frame {0} and {1}".format(index,
                                                                     indexR)))
                     points = compute_3D(self.cf, index, points_L, points_R,
                                                                     points)
-                if self.split:
+                if self.split: # "split" = 1 to check the mesh left and right
                     points = compute_3D(self.cf, index, points_L, p_empty,
                                                                     points)
                     # indexR only to calculated teta,
-                    # 1/4 of circumference before (with angle =45°)
+                    # 1/4 of circumference before (with angle = 45°)
                     points = compute_3D(self.cf, index, points_R, p_empty,
                                                                     points)
-            # one run
-            else:
+
+            # If only left laser: double = 0
+            if not self.double:
                 points = compute_3D(self.cf, index, points_L, p_empty, points)
 
         # Create string used in ply
@@ -145,48 +157,71 @@ class Process():
         write_ply(self.cf["plyFile"], points_str)
 
         t_total = int(time() - top)
-        print(("Compute in {0} seconds".format(t_total)))
+        print(("Compute in {0} seconds\n".format(t_total)))
         print("\n\n  Good job, thank's\n\n")
-        try:
-            subprocess.call('meshlab {0}'.format(self.cf["plyFile"]),
-                                                                shell=True)
-        except:
-            print("You must install meshlab,")
-            print("sudo apt-get install meshlab")
+        if points.shape[0] > 1:
+            ply = self.cf["plyFile"]
+            stl = self.cf["stlFile"]
+            mlx = self.cf["mlxFile"]
+            open_in_meshlab(ply)
+            #PLY_to_STL(ply, stl, mlx)
+            #save_binary(ply)
+            pass
 
-def lines_image(x_array, y_array, queue, blackim):
+def save_binary(ply):
+    print("PLY file = {0}".format(ply))
+    myfile = open(ply, "wb")
+    fo = myfile.read()
+    myfile.write(fo)
+    myfile.close()
+
+def open_in_meshlab(ply):
+    ##try:
+        ##print("{0} open with meshlab".format(ply))
+        ##subprocess.call('meshlab {0}'.format(ply), shell=False)
+    ##except:
+        ##print("You must install meshlab,")
+        ##print("sudo apt-get install meshlab")
+    subprocess.call('meshlab {0}'.format(ply), shell=True)
+
+def PLY_to_STL(ply_in, stl_out, mlx):
+    ##try:
+    ##except:
+        ##print("Problem with meshlabserver")
+        ##print("You must install meshlab:")
+        ##print("    sudo apt-get install meshlab")
+    print("{0}\nconvert with\n{2}\nto \n{1}\n\n".format(ply_in, stl_out, mlx))
+    subprocess.call("meshlabserver -i {0} -o {1} -s {2} -om".format(\
+            ply_in, stl_out, mlx), shell = True)
+
+def lines_image(x_array, y_array, blackim):
     im = blackim.copy()
     for i in range(x_array.shape[0]):
         im.itemset(y_array[i], x_array[i], 1, 255)
         im.itemset(y_array[i], x_array[i], 2, 255)
-    return im, queue
+    return im
 
-def apply_gray_change(cf, current_set, gray_max, sw, im_num):
-    if gray_max != current_set[0]:
-        save_config("scan", "gray_max", gray_max)
-        cf["gray_max"] = gray_max
-    if sw != current_set[1]:
+def apply_gray_change(cf, old_set, new_set, im_num):
+    if new_set != old_set:
+        save_config("scan", "gray_max", new_set)
+        cf["gray_max"] = new_set
         im_num = -1
-    cv2.setTrackbarPos('Restart', 'Laser Line', 0)
-    return im_num
+    return im_num, cf
 
 def create_trackbar_laser_line(cf):
     cv2.createTrackbar('Gray Max', 'Laser Line', 1, 254, nothing)
-    cv2.createTrackbar('Restart', 'Laser Line', 0, 1, nothing)
     gray_max = cf["gray_max"]
     cv2.setTrackbarPos('Gray Max', 'Laser Line', gray_max)
 
 def display_laser_line(cf, im):
     # get current positions of trackbars
     gray_max = cv2.getTrackbarPos('Gray Max', 'Laser Line')
-    sw = cv2.getTrackbarPos('Restart', 'Laser Line')
     # TODO set k with width
     width = int(cf["width"]*0.8)
     height = int(cf["height"]*0.8)
     im = cv2.resize(im, (width, height))
     cv2.imshow('Laser Line', im)
-    #cv2.moveWindow('Laser Line', 200, 30)
-    return gray_max, sw
+    return gray_max
 
 def compute_3D(cf, index, points_L, points_R, points):
     ''' Compute one frame:
@@ -197,7 +232,7 @@ def compute_3D(cf, index, points_L, points_R, points):
     See sheme at:
       points = nparray(3, points_number) = all 3D points previously calculated
       points_L and points_R = nparray(2, points_number) = points in frame
-      index = right frame number
+      index = left frame number
     Return new points array
     '''
 
@@ -213,20 +248,23 @@ def compute_3D(cf, index, points_L, points_R, points):
     z_scale = cf["z_scale"]
     # Angles
     step = cf["nb_img"]
-    angle_step = 2 * np.pi / step
+    angle_step = float(2 * np.pi) / step
     alpha = cf["ang_rd"]
     sin_cam_ang = np.sin(alpha)
     teta = angle_step * index
-    # Perspective correction
+    # Perspective correction from middle axis and down
     ph = cf["persp_h"]
     pv = cf["persp_v"]
-    # Motor axis vertical position
-    ma = cf["motor_axis"]
+    # Motor axis position
+    mav = cf["motor_axis_v"]
+    mah = cf["motor_axis_h"]
+    # coté opposé, coté adjacent
+    co = mav - pv + cf["persp_cor"]
+    ca = ph - mah
     # Alpha
-    tg_alpha = 0.2
-    if ph != 0: # No 0 div
-        tg_alpha = pv / ph
-    print("Perspective: Tangente alpha = {0}".format(tg_alpha))
+    tg_alpha = 0.2 # default value
+    if float(ca) != 0.0: # No 0 div
+        tg_alpha = float(co) / float(ca)
     ############################
 
     # Create empty array to fill with frame points 3D coordinates
@@ -258,20 +296,22 @@ def compute_3D(cf, index, points_L, points_R, points):
         b_raw = points_LR[pt][1]
 
         AM = width/2 - a_raw
+        # Correction because of ????
+        AM = AM - float(AM * AM) / 2500.0
 
-        if -300 < AM < 300: # Delete background laser line
+        if -400 < AM < 400: # Delete background laser line
             # Point position from turn table center
             OM = AM / sin_cam_ang
             FM = height - b_raw
             v = (height / 2) - b_raw
-            a0 = -2* tg_alpha / height
+            a0 = - 2 * tg_alpha / height
             tg_beta = a0 * v
             OG = FM + AM * tg_beta
 
             if mini < OG  < maxi:
                 # Changement de repère orthonormé
-                x = np.cos(alpha - teta) * OM * scale
-                y = np.sin(alpha - teta) * OM * scale
+                x = np.cos(teta) * OM * scale
+                y = np.sin(teta) * OM * scale
                 z = OG * scale * z_scale
 
                 # Add this point
@@ -295,7 +335,7 @@ def array_to_str(p_array):
 
 def write_ply(ply_file, points_str):
     '''points = list of string: "1 0 5\n" '''
-    file = open(ply_file,"w")
+    file = open(ply_file, "w")
     file.write('''ply
 format ascii 1.0
 comment author: Skandal
@@ -316,11 +356,12 @@ end_header
 '''.format(len(points_str), "".join(points_str)))
 
     file.close()
-    print(("\n\nSaved {0} points to:\n     {1}\n".format(len(points_str),
+    print(("\nSaved {0} points to:\n     {1}\n".format(len(points_str),
                                                             ply_file)))
 
 def get_one_laser_line(cf, im_num):
     tframe = time()
+    no_image = False
     imgFile = cf["img_dir"] + "/s_" + str(im_num) + ".png"
     txtFile = cf["txt_dir"] + "/t_" + str(im_num) + ".txt"
 
@@ -334,9 +375,10 @@ def get_one_laser_line(cf, im_num):
         print(("Image {0}: {1} points founded in {2} milliseconds".\
         format("/s_" + str(im_num) + ".png", white_points.shape[0], tfinal)))
     else:
-        print("No image in {0} project".format(cf["a_name"]))
+        print("No image in {0} project\n".format(cf["a_name"]))
+        no_image = True
 
-    return x, y
+    return x, y, no_image
 
 def find_white_points_in_gray(cf, im):
     # if black image, this default settings return one point at (0, 0)
@@ -381,5 +423,10 @@ def nothing(x):
 if __name__=='__main__':
     conf = load_config("./scan.ini")
     proc = Process(conf)
-    #proc.get_laser_line()
+    ##proc.get_laser_line()
+    ##img = cv2.imread('skandal.png', 0)
+    ##cv2.imshow('img', img)
+    ##cv2.waitKey(100)
+    ##cv2.destroyAllWindows()
     proc.get_PLY()
+

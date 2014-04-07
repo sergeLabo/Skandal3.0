@@ -24,6 +24,8 @@
 
 
 import os, sys
+from threading import Thread
+import cv2
 from config import load_config, get_available_name, save_config
 from capture import Capture
 from process import Process
@@ -49,7 +51,13 @@ class Skandal():
         self.proc.get_laser_line()
 
     def process_PLY(self):
+        self.proc.set_split_off()
         self.proc.get_PLY()
+
+    def control_PLY(self):
+        self.proc.set_split_on()
+        self.proc.get_PLY()
+        self.proc.set_split_off()
 
     def scan(self):
         self.shot()
@@ -63,6 +71,12 @@ def clear():
     else:
         c = os.system('clear')
 
+def bug_opencv_hack():
+    img = cv2.imread('skandal.png', 0)
+    cv2.imshow('img', img)
+    cv2.waitKey(100)
+    cv2.destroyAllWindows()
+
 def menu_terminal():
     name = name_input()
     save_config("scan", "name", name)
@@ -73,17 +87,18 @@ def menu_terminal():
         clear()
         print("Your project is {0}".format(conf["name"]))
         menu = """
-
         1. Set Camera Position
-
+                Régler le scanner
         2. Shot
-
+                Capturer 2 tours soit 400 images
         3. Process Images to get laser line
-
-        4. Process PLY to get *.ply file
-
-        5. Scan
-
+                Trouver les lignes laser dans les images
+        4. Get *.ply file
+                Obtenir le fichier ply
+        5. Get *.ply Control
+                Obtenir le fichier ply avec les meshs gauche et droit
+        6. Scan
+                Faire toutes les étapes
         0. Exit
         """
         print(("{0}".format(menu)))
@@ -98,14 +113,21 @@ def menu_terminal():
                 choice = None
             if choice == 1:
                 skandal.set_cam_position()
+                bug_opencv_hack()
             elif choice == 2:
                 skandal.shot()
+                bug_opencv_hack()
             elif choice == 3:
                 skandal.process_images()
+                bug_opencv_hack()
             elif choice == 4:
                 skandal.process_PLY()
             elif choice == 5:
+                skandal.control_PLY()
+                bug_opencv_hack()
+            elif choice == 6:
                 skandal.scan()
+                bug_opencv_hack()
             elif choice == 0:
                 sys.exit(0)
             else:

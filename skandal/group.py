@@ -1,4 +1,4 @@
-#! /usr/bin/env PYTHON3
+#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # group.py
@@ -74,11 +74,10 @@ def group(table, flip=False):
     # Number of counts per key is the difference of our slice points.
     # Cap off with number of keys for last bin
     key_count = np.diff(np.append(slices, len(keys)))
-
     try:
         per_key_average = per_key_sum / key_count
     except:
-        print("Zero division !")
+        print("Zero division in group function !")
         per_key_average = np.zeros(len(keys_index))
 
     # x, y are separate array

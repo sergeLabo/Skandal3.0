@@ -22,7 +22,7 @@
 #
 #############################################################################
 
-
+import subprocess
 from time import time, sleep
 import cv2
 import numpy as np
@@ -46,25 +46,23 @@ class Capture():
         self.arduino = init_arduino(self.cf)
 
     def set_cam_position(self):
-        create_trackbar_raw()
         create_trackbar_gray()
-        # set = 0 br, 1 co, 2 sh, 3 fo, 4 sw, 5 ph, 6 pv, 7 ma
+        # set = 0 br, 1 co, 2 sh, 3 fo, 4 sw, 5 ph, 6 pv, 7 mah, 8 mav, 9 rot
         old_set = set_init_trackbar(self.cf)
 
         while True:
             ret, frame = self.capture.read()
             if ret:
                 # Display original image
-                ph, pv, ma = display_raw(frame, self.width, self.height,
-                                                                    self.cf)
+                frame = display_raw(frame, self.width, self.height, self.cf)
                 # Display grayscale image
-                br, co, sh, fo, sw = display_gray(frame, self.width,
-                                                                self.height)
-                new_set = br, co, sh, fo, sw, ph, pv, ma
+                br, co, sh, fo, sw, ph, pv, mah, mav, rot = display_gray(frame,
+                                                    self.width, self.height)
+                new_set = br, co, sh, fo, sw, ph, pv, mah, mav, rot
                 # Apply change and update conf
                 self.cf = apply_conf_change(self.cf, old_set, new_set)
                 # Update laser
-                laser_D_on_off(self.arduino, old_set, sw)
+                laser_L_or_R(self.arduino, old_set, sw)
                 old_set = new_set
                 # wait for esc key to exit
                 key = np.int16(cv2.waitKey(33))
@@ -78,12 +76,13 @@ class Capture():
         top = time()
         nb_shot = 0
         t_shot = time()
+        set_laser("left", self.arduino)
         while True:
             way = "left"
             ret, frame = self.capture.read()
             if ret:
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                display_raw(frame, self.width, self.height, self.cf)
+
                 # Shot only if cam is stable, it's a very long time
                 if time() - top > 5:
                     if way == "left":
@@ -104,6 +103,9 @@ class Capture():
                                 frame, nb_shot, way, self.arduino)
                         else:
                             break
+                                # TODO: Bug if resize in display_raw
+                # Display
+                frame = display_raw(frame, self.width, self.height, self.cf)
                 # wait for esc key to exit
                 key = np.int16(cv2.waitKey(33))
                 if key == 27:
@@ -111,7 +113,7 @@ class Capture():
             else:
                 print("Webcam is busy")
         print("\n{0} good shot in {1} seconds".format(\
-                nb_shot * (self.double + 1), int(time() - top)))
+                nb_shot , int(time() - top)))
         cv2.destroyAllWindows()
 
     def close(self):
@@ -121,7 +123,7 @@ class Capture():
         self.capture.release()
 
 def apply_conf_change(cf, old_set, new_set):
-    # set = 0 br, 1 co, 2 sh, 3 fo, 4 sw, 5 ph, 6 pv, 7 ma
+    # set = 0 br, 1 co, 2 sh, 3 fo, 4 sw, 5 ph, 6 pv, 7 mah, 8 mav, 9 rot
     if old_set[0] != new_set[0]:
         cf["brightness"] = new_set[0]
         apply_cam_setting("Brightness", new_set[0])
@@ -145,15 +147,15 @@ def apply_conf_change(cf, old_set, new_set):
         cf["persp_v"] = new_set[6]
         save_config("scan", "persp_v", new_set[6])
     if old_set[7] != new_set[7]:
-        cf["motor_axis"] = new_set[7]
-        save_config("scan", "motor_axis", new_set[7])
+        cf["motor_axis_h"] = new_set[7]
+        save_config("scan", "motor_axis_h", new_set[7])
+    if old_set[8] != new_set[8]:
+        cf["motor_axis_v"] = new_set[8]
+        save_config("scan", "motor_axis_v", new_set[8])
+    if old_set[9] != new_set[9]:
+        cf["rotate"] = new_set[9]
+        save_config("scan", "rotate", new_set[9])
     return cf
-
-def create_trackbar_raw():
-    cv2.namedWindow("Raw Webcam")
-    cv2.createTrackbar("Motor Axis", "Raw Webcam", 0, 200, nothing)
-    cv2.createTrackbar("Perspective H", "Raw Webcam", 0, 400, nothing)
-    cv2.createTrackbar("Perspective V", "Raw Webcam", 0, 100, nothing)
 
 def create_trackbar_gray():
     cv2.namedWindow("Gray Scale")
@@ -161,16 +163,25 @@ def create_trackbar_gray():
     cv2.createTrackbar("Contrast", "Gray Scale", 0, 10, nothing)
     cv2.createTrackbar("Sharpness", "Gray Scale", 0, 50, nothing)
     cv2.createTrackbar("Focus (absolute)", "Gray Scale", 0, 40, nothing)
-    switch = '0: 1 laser \n1: 2 laser'
+    switch = '0: Left Laser \n1: Right laser'
     cv2.createTrackbar(switch, "Gray Scale", 0, 1, nothing)
+    cv2.createTrackbar("Motor Axis H", "Gray Scale", 0, 30, nothing)
+    cv2.createTrackbar("Motor Axis V", "Gray Scale", 0, 200, nothing)
+    cv2.createTrackbar("Perspective H", "Gray Scale", 0, 400, nothing)
+    cv2.createTrackbar("Perspective V", "Gray Scale", 0, 100, nothing)
+    cv2.createTrackbar("Rotate", "Gray Scale", 0, 100, nothing)
 
 def set_init_trackbar(cf):
     ph = cf["persp_h"]
     pv = cf["persp_v"]
-    ma = cf["motor_axis"]
-    cv2.setTrackbarPos("Perspective H", "Raw Webcam", ph)
-    cv2.setTrackbarPos("Perspective V", "Raw Webcam", pv)
-    cv2.setTrackbarPos("Motor Axis", "Raw Webcam", ma)
+    mav = cf["motor_axis_v"]
+    mah = cf["motor_axis_h"]
+    rot = cf["rotate"]
+    cv2.setTrackbarPos("Perspective H", "Gray Scale", ph)
+    cv2.setTrackbarPos("Perspective V", "Gray Scale", pv)
+    cv2.setTrackbarPos("Motor Axis H", "Gray Scale", mah)
+    cv2.setTrackbarPos("Motor Axis V", "Gray Scale", mav)
+    cv2.setTrackbarPos("Rotate", "Gray Scale", rot)
     br = cf["brightness"]
     co = cf["contrast"]
     sh = cf["sharpness"]
@@ -180,32 +191,40 @@ def set_init_trackbar(cf):
     cv2.setTrackbarPos("Contrast", "Gray Scale", co)
     cv2.setTrackbarPos("Sharpness", "Gray Scale", sh)
     cv2.setTrackbarPos("Focus (absolute)", "Gray Scale", fo)
-    return br, co, sh, fo, sw, ph, pv, ma
+    return br, co, sh, fo, sw, ph, pv, mah, mav, rot
+
+def im_size(cf):
+    '''Coeff multiplicateur function of cam and screen size.
+        TODO à compléter
+    '''
+    # Default value
+    kx = 1
+    ky = 1
+    return kx, ky
 
 def display_raw(im, width, height, cf):
-    '''k = coeff multiplicateur'''
-    # get current positions of trackbars
-    ph = cv2.getTrackbarPos("Perspective H", "Raw Webcam")
-    pv = cv2.getTrackbarPos("Perspective V", "Raw Webcam")
-    ma = cv2.getTrackbarPos("Motor Axis", "Raw Webcam")
-    # Display with resize
-    k = 1
-    w = int(width * k)
-    h = int(height * k)
-    im = cv2.resize(im, (w, h))
-    if 1400 <= width :
-        k = 0.5
-    elif 1280 <= width < 1400:
-        k = 0.9
-    else:
-        k = 1
-    W = int(width * k)
-    H = int(height * k)
+    kx, ky = im_size(cf)
+    W = int(width * kx)
+    H = int(height * ky)
     im = cv2.resize(im, (W, H))
-    im = add_lines(im, W, H, cf)
-    cv2.imshow("Raw Webcam", im)
-    #cv2.moveWindow("Raw Webcam", 0, 0)
-    return ph, pv, ma
+
+    # Rotate
+    rot = (float(cf["rotate"]) - 50) / 50
+    # Get the dimensions of the image and calculate the center of the image
+    (h, w) = im.shape[:2]
+    center = (int(w / 2), int(h / 2))
+
+    # rotate the image by rot degrees
+    M = cv2.getRotationMatrix2D(center, rot, 1.0) # center = x,y angle, scale
+    rotated = cv2.warpAffine(im, M, (w, h))
+
+    # Add lines
+    rotated = add_lines(rotated, W, H, cf)
+
+    # Display
+    cv2.imshow("Raw Webcam", rotated)
+
+    return rotated
 
 def display_gray(im, width, height):
     # get current positions of trackbars
@@ -213,20 +232,32 @@ def display_gray(im, width, height):
     co = cv2.getTrackbarPos("Contrast", "Gray Scale")
     sh = cv2.getTrackbarPos("Sharpness", "Gray Scale")
     fo = cv2.getTrackbarPos("Focus (absolute)", "Gray Scale")
-    switch = '0: 1 laser \n1: 2 laser'
+    switch = '0: Left Laser \n1: Right laser'
     sw = cv2.getTrackbarPos(switch, "Gray Scale")
-    # Display
-    im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
+
+    # get current positions of trackbars for line in raw
+    ph = cv2.getTrackbarPos("Perspective H", "Gray Scale")
+    pv = cv2.getTrackbarPos("Perspective V", "Gray Scale")
+    mah = cv2.getTrackbarPos("Motor Axis H", "Gray Scale")
+    mav = cv2.getTrackbarPos("Motor Axis V", "Gray Scale")
+    rot = cv2.getTrackbarPos("Rotate", "Gray Scale")
+
+    # Resize
     if width < 1200:
         k = 1
     else:
-        k = 0.5
+        k = 0.8
     W = int(width * k)
-    H = int(height * k)
+    H = int(height * k * 0.5)
     im = cv2.resize(im, (W, H))
+
+    # Convert
+    im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
+
+    # Display
     cv2.imshow("Gray Scale", im)
-    #cv2.moveWindow("Gray Scale", 100, 0)
-    return br, co, sh, fo, sw
+
+    return br, co, sh, fo, sw, ph, pv, mah, mav, rot
 
 def take_shot(cf, top, t_shot, im, nb_shot, way, arduino):
     if time() - t_shot > cf["tempo"]:
@@ -265,14 +296,16 @@ def write_shot(cf, img, nb_shot, way):
     cv2.imwrite(name, img)
     print(("Shot {1} {0} taken".format(nb_shot, way)))
 
-def laser_D_on_off(arduino, old_set, sw):
-    if old_set[0] != sw:
+def laser_L_or_R(arduino, old_set, sw):
+    if old_set[4] != sw:
         if sw == 0:
-            # Right laser off
+            # Left on
+            arduino .write('G')
             arduino .write('C')
         if sw == 1:
-            # Right laser on
+            # Right on
             arduino .write('D')
+            arduino .write('B')
 
 def init_arduino(cf):
     arduino = Arduino(cf)
@@ -283,39 +316,48 @@ def init_arduino(cf):
 def add_lines(im, width, height, cf):
     h = height
     w = width
-    ma = cf["motor_axis"]
-
+    mav = cf["motor_axis_v"]
+    mah = cf["motor_axis_h"]
+    pv = cf["persp_v"]
+    ph = cf["persp_h"]
     # Horizontal lines
     # Middle
     s = int(h/2)
     cv2.line(im, (0, s), (w, s), (0, 0, 0), 1)
-    # Motor axis green
-    mag = h - ma
-    cv2.line(im, (0, mag), (w, mag), (0, 255, 0), 1)
 
-    # Vertical line
-    t = int(w/2)
-    cv2.line(im, (t, 0), (t, h), (0, 0, 0), 1)
+    # Motor axis H with vertical line gray
+    mahg = mah + int(w/2)  - 15
+    cv2.line(im, (mahg, 0), (mahg, h), (100, 100, 100), 1)
+    # Motor axis V with horizontal line green
+    mavg = h - mav
+    cv2.line(im, (0, mavg), (w, mavg), (0, 255, 0), 1)
 
     # Perspective lines
     # Perspective Horizontal set with vertical red line
-    table_center_height = 100
-    i = int(h - table_center_height + cf["persp_v"])
+    i = int(h - pv)
     cv2.line(im, (0, i), (w, i), (255, 0, 0), 1)
     # Perspective Vertical set with horizontal blue line
-    j = int(w/2 - cf["persp_h"])
+    j = int(w/2 - ph + 15)
     cv2.line(im, (j, 0), (j, h), (0, 0, 255), 1)
 
+    # Middle vertical line
+    t = int(w/2)
+    cv2.line(im, (t, 0), (t, h), (0, 0, 0), 1)
+
     # Little lines
-    for t in [2, 16, 26]:
+    # Up and down
+    for t in [2, 26]:
+        # Small
         for i in range(-40, 40, 2):
             p = int(w/2 + i*2)
             u = int(t*h/32)
             cv2.line(im, (p,  -5 + u), (p, 5 + u), (0, 0, 0), 1)
+        # Middle
         for i in range(-8, 8, 2):
             p = int(w/2 + i*10)
             v = int(t*h/32)
             cv2.line(im, (p, -20 + v), (p, 20 + v), (0, 0, 0), 1)
+        # Hight
         for i in range(-4, 5, 2):
             p = int(w/2 + i*20)
             j = int(t*h/32)

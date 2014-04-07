@@ -1,8 +1,8 @@
 
 int dirPin = 11;
 int stepperPin = 12;
-int laserDPin = 10;
-int laserGPin = 13;
+int laserDPin = 13;
+int laserGPin = 10;
 
 // a variable to read incoming serial data into
 int incomingByte;

@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # arduino.py
@@ -58,8 +58,8 @@ class Arduino():
 if __name__=='__main__':
     conf = load_config("./scan.ini")
     arduino = Arduino(conf)
-    for i in range(2):
-        sleep(0.1)
+    for i in range(200):
+        sleep(1)
         print(i)
         arduino.write("H")
     arduino.close()
