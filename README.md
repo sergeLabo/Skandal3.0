@@ -14,6 +14,13 @@ In the Skandal3.0-master directory, open a terminal
 
 Press Esc key in active window to quit and get the terminal.
 
+## Unfinished
+You must set the device video number in skandal.ini:
+
+video = 0
+or
+video = 1
+
 ## Documentation
 On the Labomedia wiki
 http://wiki.labomedia.org/index.php/Cat%C3%A9gorie:Skandal
