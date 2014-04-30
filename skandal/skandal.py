@@ -24,7 +24,6 @@
 
 
 import os, sys
-from threading import Thread
 import cv2
 from config import load_config, get_available_name, save_config
 from capture import Capture

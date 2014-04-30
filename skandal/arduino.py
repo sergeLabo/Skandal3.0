@@ -34,8 +34,9 @@ class Arduino():
         self.device = conf["ard_dev"]
         try:
             self.arduino = serial.Serial(self.device, 9600)
-            print("\nInitialising Arduino device...\n")
+            print("\nInitialising Arduino device...")
             sleep(2)
+            print("Done\n")
         except:
             self.arduino = None
             print("\nNo Arduino device plugged but you can test !\n")

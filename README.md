@@ -4,7 +4,6 @@ Skandal3.0
 Skandal is a 3D Laser Scanner to create STL file from a small real object
 and print it on a 3D Printer.
 
-
 ## Usage
 In the Skandal3.0-master directory, open a terminal
 

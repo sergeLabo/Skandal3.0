@@ -50,15 +50,12 @@ def load_config(ini):
     conf["a_name"] = get_available_name(conf["name"])
 
     # Create directory
-    Skandal, img_dir, txt_dir ,ply_dir, stl_dir = \
+    Skandal, img_dir, txt_dir ,ply_dir = \
                                     directory_management(conf["a_name"])
     conf["img_dir"] = img_dir
     conf["txt_dir"] = txt_dir
     conf["ply_dir"] = ply_dir
     conf["plyFile"] = ply_dir + "/m_" + conf["a_name"] + ".ply"
-    conf["stl_dir"] = stl_dir
-    conf["stlFile"] = stl_dir + "/m_" + conf["a_name"] + ".stl"
-    conf["mlxFile"] = Skandal + "/skandal/skandal.mlx"
 
     # Get existing project list, id available image in image directory
     image_file = img_dir
@@ -73,8 +70,8 @@ def load_config(ini):
 def get_available_name(name):
     '''From raw name, get a name available to file name.'''
     name = name.encode('ascii', errors='ignore')
-    # TODO revoirpour accepter nombre si pas en premier
     name = str(name)[1:]
+    # TODO revoirpour accepter nombre si pas en premier
     name = "".join(c for c in name if c.isalpha())
     name = name[:12]
     return name
@@ -130,7 +127,7 @@ def directory_management(name):
     print("ply: {0}\n".format(ply_dir))
     print("stl: {0}\n".format(stl_dir))
 
-    return Skandal, img_dir, txt_dir ,ply_dir, stl_dir
+    return Skandal, img_dir, txt_dir ,ply_dir
 
 def save_config(section, key, value):
     '''Save config in *.ini file with section, key, value.'''
