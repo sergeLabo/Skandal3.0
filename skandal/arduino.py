@@ -1,4 +1,4 @@
-#! /usr/bin/env python3
+#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # arduino.py
@@ -39,14 +39,18 @@ class Arduino():
             print("Done\n")
         except:
             self.arduino = None
-            print("\nNo Arduino device plugged but you can test !\n")
+            print("\nNo Arduino device plugged but you can test !")
+            print("Or you must add your user to dialout:\n")
+            print("   sudo usermod -a -G dialout your_user")
+            print("and restart\n")
 
     def write(self, char):
         if self.arduino:
             if char in ['H', 'L', 'G', 'D', 'C', 'B']:
                 self.arduino.write(str(char).encode())
             else:
-                print(("{0} isn't in list of available characters".format(char)))
+                print(("{0} isn't in list of available characters".format(\
+                                                                    char)))
         else:
             print("Test without arduino card")
 

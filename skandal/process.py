@@ -1,4 +1,4 @@
-#! /usr/bin/env python3
+#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # process.py
@@ -61,7 +61,7 @@ class Process():
 
     def get_laser_line(self):
         '''Get laser line  in all image,
-        save founded points in txt file in txt directory.
+            save founded points in txt file in txt directory.
         '''
 
         top = time()
@@ -105,16 +105,15 @@ class Process():
         # Create empty array 3 x 0 to fill with all points
         points = np.asarray([]).reshape(0, 3)
 
-        # Correspondance between left and right
+        # Correspondence between left and right
         decal = int(self.angle * self.steps / np.pi)
 
         for index in range(self.steps):
             # Left frame at index
             file_L = self.cf["txt_dir"] + "/t_" +  str(index) + ".txt"
-            try:
-                points_L = np.loadtxt(file_L)
-            except:
-                print("No {0} txt file\n".format(self.cf["a_name"]))
+            points_L, no_txt = load_points(file_L, self.cf["a_name"])
+            if no_txt:
+                print("You must process image before process PLY")
                 break
             # Empty array
             p_empty = np.asarray([]).reshape(0, 2)
@@ -126,11 +125,8 @@ class Process():
                 if indexR >= 2 * self.steps:
                     indexR = indexR - self.steps
                 file_R = self.cf["txt_dir"] + "/t_" +  str(indexR) + ".txt"
-                # Erase first
-                try:
-                    points_R = np.loadtxt(file_R)
-                except:
-                    print("No {0} txt file\n".format(self.cf["a_name"]))
+                points_R, no_txt = load_points(file_L, self.cf["a_name"])
+                if no_txt:
                     break
 
                 # Compute the two frames
@@ -140,7 +136,7 @@ class Process():
                                                                     indexR)))
                     points = compute_3D(self.cf, index, points_L, points_R,
                                                                     points)
-                if self.split: # "split" = 1 to check the mesh left and right
+                if self.split: # "split" = 1 to get the meshes left and right
                     points = compute_3D(self.cf, index, points_L, p_empty,
                                                                     points)
                     # indexR only to calculated teta,
@@ -161,6 +157,16 @@ class Process():
         print("\n\n  Good job, thank's\n\n")
         if points.shape[0] > 1:
             open_in_meshlab(self.cf["plyFile"])
+
+def load_points(file_X, project_name):
+    try:
+        points = np.loadtxt(file_X)
+        no_txt = False
+    except:
+        print("No {0} txt file\n".format(project_name))
+        points = None
+        no_txt = True
+    return points, no_txt
 
 def open_in_meshlab(ply):
     subprocess.call('meshlab {0}'.format(ply), shell=True)
@@ -185,7 +191,7 @@ def create_trackbar_laser_line(cf):
     cv2.setTrackbarPos('Gray Max', 'Laser Line', gray_max)
 
 def display_laser_line(cf, im):
-    # get current positions of trackbars
+    # Get current positions of trackbars
     gray_max = cv2.getTrackbarPos('Gray Max', 'Laser Line')
     # TODO set k with width
     width = int(cf["width"]*0.8)
@@ -195,7 +201,7 @@ def display_laser_line(cf, im):
     return gray_max
 
 def get_perspective(cf):
-    # Perspective correction from middle axis and down
+    # Perspective correction
     ph = cf["persp_h"]
     pv = cf["persp_v"]
     # Motor axis position
@@ -204,11 +210,30 @@ def get_perspective(cf):
     # coté opposé, coté adjacent
     co = mav - pv + cf["persp_cor"]
     ca = ph - mah
-    # Alpha
-    tg_alpha = 0.2 # default value
+
+    persp = 0.2 # default value
     if float(ca) != 0.0: # No 0 div
-        tg_alpha = float(co) / float(ca)
-    return tg_alpha
+        persp = float(co) / float(ca)
+    return persp
+
+def concatenate_and_group(points_L, points_R):
+    # If only one point, shape=(2,) not (1, 2)
+    # I replace this point with array (1, 2) fill with 0
+    if points_L.shape == (2,):
+        points_L = np.zeros((1, 2))
+    if points_R.shape == (2,):
+        points_R = np.zeros((1, 2))
+
+    # Concatenate points_L and points_R
+    points_LR = np.concatenate((points_L, points_R))
+
+    # Group points on the same b with point[b, a]
+    y_line, x_line, thickness = group(points_LR, flip=True)
+
+    # x and y array in one array
+    points_new = np.transpose(np.vstack((x_line, y_line)))
+
+    return points_new
 
 def compute_3D(cf, index, points_L, points_R, points):
     ''' Compute one frame:
@@ -225,78 +250,75 @@ def compute_3D(cf, index, points_L, points_R, points):
 
     # Time start in this function
     tframe = time()
-    ############################ TODO use **kwargs ??
     height = cf["height"]
     width = cf["width"]
     scale = cf["scale"]
+    z_scale = cf["z_scale"]
     # Points under mini and upper maxi are deleted
     mini = cf["z_down"]
     maxi = height - cf["z_up"]
-    z_scale = cf["z_scale"]
     # Angles
     step = cf["nb_img"]
     angle_step = float(2 * np.pi) / step
-    alpha = cf["ang_rd"]
-    sin_cam_ang = np.sin(alpha)
+    sin_cam_ang = np.sin(cf["ang_rd"])
     teta = angle_step * index
-    tg_alpha = get_perspective(cf)
-    ############################
+    persp = get_perspective(cf)
 
-    # Create empty array to fill with frame points 3D coordinates
-    frame_points = np.asarray([]).reshape(0, 3)
-
-    # Problem if only one point
-    # TODO if one real point, it will be replace with 0, 0
-    if points_L.shape == (2,):
-        points_L = np.zeros((1, 2))
-    if points_R.shape == (2,):
-        points_R = np.zeros((1, 2))
-
-    # Concatenate points_L and points_R
-    points_LR = np.concatenate((points_L, points_R))
-
-    # Group points on the same b with point[b, a]
-    y_line, x_line, thickness = group(points_LR, flip=True)
-
-    # x and y array in one array
-    points_new = np.transpose(np.vstack((x_line, y_line)))
+    # Concatenate and group
+    points_new = concatenate_and_group(points_L, points_R)
 
     # Number of points in frame
     nb = points_new.shape[0]
 
-    # For all points (x, y) in txt file
+    # Create empty array to fill with frame points 3D coordinates
+    frame_points = np.asarray([]).reshape(0, 3)
+
+    # For all points (x, y)
     for pt in range(nb):
         # a_raw, b_raw = point coordinates in image with origine up, left
-        a_raw = points_LR[pt][0]
-        b_raw = points_LR[pt][1]
+        a_raw = points_new[pt][0]
+        b_raw = points_new[pt][1]
 
         AM = width/2 - a_raw
-        # Correction because of ????
-        AM = AM - float(AM * AM) / 2500.0
 
-        if -400 < AM < 400: # Delete background laser line
-            # Point position from turn table center
-            OM = AM / sin_cam_ang
-            FM = height - b_raw
-            v = (height / 2) - b_raw
-            a0 = - 2 * tg_alpha / height
-            tg_beta = a0 * v
-            OG = FM + AM * tg_beta
-
-            if mini < OG  < maxi:
-                # Changement de repère orthonormé
-                x = np.cos(teta) * OM * scale
-                y = np.sin(teta) * OM * scale
-                z = OG * scale * z_scale
-
-                # Add this point
-                frame_points = np.append(frame_points, [[x, y, z]], axis=0)
+        # From point in frame, get world coordinates
+        point = (AM, sin_cam_ang, height, b_raw, persp, mini, maxi, scale,
+                                                                z_scale, teta)
+        frame_points = get_world_coord(point, frame_points)
 
     points = np.append(points, frame_points, axis=0)
     tfinal = int(1000*(time() - tframe))
     print(("Frame {0} compute in {1} milliseconds, {2} points founded".format(\
                     index, tfinal, frame_points.shape[0])))
     return points
+
+def get_world_coord(point, frame_points):
+    (AM, sin_cam_ang, height, b_raw, persp, mini, maxi, scale, z_scale,
+                                                        teta) = point
+
+    # Bidouille intuitive
+    # Correction because cube face are curved
+    AM = AM - float(AM * AM) / 2500.0
+
+    if -400 < AM < 400:  # Delete background laser line
+        # Point position from turn table center
+        OM = AM / sin_cam_ang
+        # Height
+        FM = height - b_raw
+        v = (height / 2) - b_raw
+        a0 = - 2 * persp / height
+        tg_beta = a0 * v
+        OG = FM + AM * tg_beta
+
+        if mini < OG  < maxi:
+            # Changement de repère orthonormé
+            x = np.cos(teta) * OM * scale
+            y = np.sin(teta) * OM * scale
+            z = OG * scale * z_scale
+            # Add this point
+            frame_points = np.append(frame_points, [[x, y, z]], axis=0)
+
+    return frame_points
 
 def array_to_str(p_array):
     ''' From array(a lot x 3) return a string to create ply. '''
@@ -310,8 +332,7 @@ def array_to_str(p_array):
 
 def write_ply(ply_file, points_str):
     '''points = list of string: "1 0 5\n" '''
-    file = open(ply_file, "w")
-    file.write('''ply
+    header = '''ply
 format ascii 1.0
 comment author: Skandal
 element vertex {0}
@@ -328,8 +349,9 @@ property uchar green
 property uchar blue
 end_header
 {1}
-'''.format(len(points_str), "".join(points_str)))
-
+'''
+    file = open(ply_file, "w")
+    file.write(header.format(len(points_str), "".join(points_str)))
     file.close()
     print(("\nSaved {0} points to:\n     {1}\n".format(len(points_str),
                                                             ply_file)))
@@ -344,7 +366,7 @@ def get_one_laser_line(cf, im_num):
 
     x, y = 0, 0
     if img != None:
-        white_points, x , y = find_white_points_in_gray(cf, img)
+        white_points, x, y = find_white_points_in_gray(cf, img)
         save_points(white_points, txtFile)
         tfinal = int(1000*(time() - tframe))
 
@@ -361,6 +383,7 @@ def find_white_points_in_gray(cf, im):
     x_line = np.array([0.0])
     y_line  = np.array([0.0])
     thickness = np.array([0.0])
+    # Points beetwin color and 255 are selected
     color = 255 - cf["gray_max"]
 
     #--------------- Don't forget: y origine up left -------------#
@@ -385,7 +408,6 @@ def find_white_points_in_gray(cf, im):
     # x and y array in one array
     points = np.transpose(np.vstack((x_line, y_line)))
 
-    # x_line, y_line only to plot
     return points, x_line, y_line
 
 def save_points(points, file_name):
@@ -398,10 +420,10 @@ def nothing(x):
 if __name__=='__main__':
     conf = load_config("./scan.ini")
     proc = Process(conf)
-    proc.get_laser_line()
-    img = cv2.imread('skandal.png', 0)
-    cv2.imshow('img', img)
-    cv2.waitKey(100)
-    cv2.destroyAllWindows()
+    ##proc.get_laser_line()
+    ##img = cv2.imread('skandal.png', 0)
+    ##cv2.imshow('img', img)
+    ##cv2.waitKey(100)
+    ##cv2.destroyAllWindows()
     proc.get_PLY()
 
