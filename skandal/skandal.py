@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # skandal.py
@@ -34,35 +34,39 @@ class Skandal():
     '''Change config, capture, process.'''
     def __init__(self):
         self.cf = load_config("./scan.ini")
-        self.cap = Capture(self.cf)
-        self.proc = Process(self.cf)
-
-    def change_config(self):
-        pass
 
     def set_cam_position(self):
-        self.cap.set_cam_position()
+        cap = Capture(self.cf)
+        cap.set_cam_position()
+        del cap
 
     def shot(self):
-        self.cap.shot()
+        cap = Capture(self.cf)
+        cap.shot()
+        del cap
 
     def process_images(self):
-        self.proc.get_laser_line()
+        proc = Process(self.cf)
+        proc.get_laser_line()
+        del proc
 
     def process_PLY(self):
-        self.proc.set_split_off()
-        self.proc.get_PLY()
+        proc = Process(self.cf)
+        proc.set_split_off()
+        proc.get_PLY()
+        del proc
 
     def control_PLY(self):
-        self.proc.set_split_on()
-        self.proc.get_PLY()
-        self.proc.set_split_off()
+        proc = Process(self.cf)
+        proc.set_split_on()
+        proc.get_PLY()
+        proc.set_split_off()
+        del proc
 
     def scan(self):
         self.shot()
         self.process_images()
         self.process_PLY()
-
 
 def clear():
     if (os.name == 'nt'):
@@ -77,8 +81,11 @@ def bug_opencv_hack():
     cv2.destroyAllWindows()
 
 def menu_terminal():
+    # First cam number
+    cam_number_input()
+    # Project name
     name = name_input()
-    save_config("scan", "name", name)
+
     # Create directory, variable with this name
     skandal = Skandal()
     conf = skandal.cf
@@ -86,7 +93,7 @@ def menu_terminal():
         clear()
         print("Your project is {0}".format(conf["name"]))
         menu = """
-        1. Set Camera Position
+        1. Set Skandal
                 Régler le scanner
         2. Shot
                 Capturer 2 tours soit 400 images
@@ -144,7 +151,22 @@ def name_input():
             print(("'%s' is not a valid name." % e.args[0].split(": ")[1]))
     name = get_available_name(choice)
     print("\n\nYour project name is {0}\n\n".format(name))
-    return name
+    save_config("scan", "name", name)
+    return choice
+
+def cam_number_input():
+    clear()
+    is_valid = False
+    while not is_valid :
+        try :
+            print('Enter your camera device number,')
+            print('Get it with "uvcdynctrl -l"')
+            choice = raw_input('\n\n  Camera device number :')
+            is_valid = True
+        except ValueError as e :
+            print(("'%s' is not a valid name." % e.args[0].split(": ")[1]))
+    save_config("scan", "cam", choice)
+    print("\n\nYour camera device number is {0}\n\n".format(choice))
 
 
 if __name__=='__main__':

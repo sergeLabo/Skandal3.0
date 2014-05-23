@@ -1,4 +1,4 @@
-#! /usr/bin/env PYTHON
+#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # group.py
@@ -24,7 +24,7 @@
 
 '''
 From:
-http://stackoverflow.com/questions/7790611/average-duplicate-values-from-two-paired-lists-in-python-using-numpy
+http://goo.gl/Ny8ySb
 '''
 
 import numpy as np

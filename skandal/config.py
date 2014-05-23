@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # config.py
@@ -87,13 +87,12 @@ def directory_management(name):
     ''' Create all needed directories if not. Return this directories.'''
     # TODO: what append if a creative guy change the name config.py
     Skandal = os.path.dirname(os.getcwd()+"config.py")
-    print("\n\nDirectories:\n")
-    print("Master directory is {}".format(Skandal))
+    print("\nDirectories:")
     # Working directory
     try:
         os.mkdir(Skandal + "/work")
     except:
-        print("Directory {0} exist".format(Skandal + "/work"))
+        print("Directory exist")
         pass
     # Master directories
     all_dir = [ "/image",
@@ -105,7 +104,7 @@ def directory_management(name):
         try:
             os.mkdir(Skandal + "/work" + d)
         except:
-            print("Directory {0} exist".format(Skandal + "/work" + d))
+            print("Directory exist")
             pass
 
     # Sub-directories
@@ -114,18 +113,13 @@ def directory_management(name):
         try:
             os.mkdir(sub_dir)
         except:
-            print("Directory {0} exist".format(sub_dir))
+            print("Directory exist")
             pass
 
     img_dir = Skandal + "/work" + "/image/p_" + name
     txt_dir = Skandal + "/work" + "/txt/p_" + name
     ply_dir = Skandal + "/work" + "/ply"
     stl_dir = Skandal + "/work" + "/stl"
-    print("\n\n\n  Directories for this work:\n")
-    print("image: {0}".format(img_dir))
-    print("txt: {0}".format(txt_dir))
-    print("ply: {0}\n".format(ply_dir))
-    print("stl: {0}\n".format(stl_dir))
 
     return Skandal, img_dir, txt_dir ,ply_dir
 
@@ -149,4 +143,5 @@ def save_config(section, key, value):
 
 
 if __name__=='__main__':
+    # conf is a dict with all parameter
     conf = load_config("./scan.ini")

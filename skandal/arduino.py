@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # arduino.py
@@ -30,8 +30,8 @@ from config import load_config
 
 class Arduino():
     '''Manage socket to Arduino card.'''
-    def __init__(self, conf):
-        self.device = conf["ard_dev"]
+    def __init__(self, device):
+        self.device = device
         try:
             self.arduino = serial.Serial(self.device, 9600)
             print("\nInitialising Arduino device...")
@@ -62,7 +62,8 @@ class Arduino():
 
 if __name__=='__main__':
     conf = load_config("./scan.ini")
-    arduino = Arduino(conf)
+    device = conf["ard_dev"]
+    arduino = Arduino(device)
     for i in range(200):
         sleep(1)
         print(i)

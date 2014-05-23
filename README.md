@@ -13,13 +13,6 @@ In the Skandal3.0-master directory, open a terminal
 
 Press Esc key in active window to quit and get the terminal.
 
-## Unfinished
-You must set the device video number in skandal.ini:
-
-video = 0
-or
-video = 1
-
 ## Documentation
 On the Labomedia wiki
 http://wiki.labomedia.org/index.php/Cat%C3%A9gorie:Skandal
@@ -39,7 +32,6 @@ With a webcam and without Arduino Card
 
 ## Requirements
 * python3
-
 * OpenCV 3.0
 
 
@@ -72,3 +64,5 @@ See the bundled LICENSE file for details.
 ## Bugs:
 * Often, OpenCV Windows doesn't close with cv2.destroyAllWindows()
     so a small image is open to close the cam windows
+
+* The class Window open some unused window for the task.
