@@ -1,4 +1,4 @@
-#! /usr/bin/env python3
+#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # group.py
@@ -29,12 +29,12 @@ http://goo.gl/Ny8ySb
 
 import numpy as np
 
+
 def group(table, flip=False):
     """
-    TODO: clear and explain this function
-
     table is a np.array dimension 2 x n
     Group the values by key
+    Flip to group on x, else on y
     Returns:
         nparray of unique keys
         nparray of the per-key average
@@ -47,13 +47,13 @@ def group(table, flip=False):
 
     # Create 2 numpy array
     if not flip:
-        keys = table[:,0]
-        values = table[:,1]
+        keys = table[:, 0]
+        values = table[:, 1]
     else:
-        keys = table[:,1]
-        values = table[:,0]
+        keys = table[:, 1]
+        values = table[:, 0]
 
-    # Create array of keys index: retur example [0, 1, 2, 3, 4]
+    # Create array of keys index: return example [0, 1, 2, 3, 4]
     keys_index = np.argsort(keys)
 
     # Create array of keys table, sorted with keys_index
@@ -63,7 +63,7 @@ def group(table, flip=False):
     values = values[keys_index]
 
     # The slicing points of the bins to sum over
-    slices = np.concatenate(([0], np.where(keys[:-1]!=keys[1:])[0]+1))
+    slices = np.concatenate(([0], np.where(keys[:-1] != keys[1:])[0]+1))
 
     # First entry of each bin is a unique key
     unique_keys = keys[slices]

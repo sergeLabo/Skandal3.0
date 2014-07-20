@@ -1,4 +1,4 @@
-#! /usr/bin/env python3
+#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # arduino.py
@@ -49,8 +49,8 @@ class Arduino():
             if char in ['H', 'L', 'G', 'D', 'C', 'B']:
                 self.arduino.write(str(char).encode())
             else:
-                print(("{0} isn't in list of available characters".format(\
-                                                                    char)))
+                print(("{0} isn't in list of available characters".format(
+                      char)))
         else:
             print("Test without arduino card")
 
@@ -60,7 +60,7 @@ class Arduino():
             print("Arduino closed")
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     conf = load_config("./scan.ini")
     device = conf["ard_dev"]
     arduino = Arduino(device)

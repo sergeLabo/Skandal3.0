@@ -1,4 +1,4 @@
-#! /usr/bin/env python3
+#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # skandal.py
@@ -23,7 +23,8 @@
 #############################################################################
 
 
-import os, sys
+import os
+import sys
 import cv2
 from config import load_config, get_available_name, save_config
 from capture import Capture
@@ -33,31 +34,31 @@ from process import Process
 class Skandal():
     '''Change config, capture, process.'''
     def __init__(self):
-        self.cf = load_config("./scan.ini")
+        self.conf = load_config("./scan.ini")
 
     def set_cam_position(self):
-        cap = Capture(self.cf)
+        cap = Capture(self.conf)
         cap.set_cam_position()
         del cap
 
     def shot(self):
-        cap = Capture(self.cf)
+        cap = Capture(self.conf)
         cap.shot()
         del cap
 
     def process_images(self):
-        proc = Process(self.cf)
+        proc = Process(self.conf)
         proc.get_laser_line()
         del proc
 
     def process_PLY(self):
-        proc = Process(self.cf)
+        proc = Process(self.conf)
         proc.set_split_off()
         proc.get_PLY()
         del proc
 
     def control_PLY(self):
-        proc = Process(self.cf)
+        proc = Process(self.conf)
         proc.set_split_on()
         proc.get_PLY()
         proc.set_split_off()
@@ -68,11 +69,12 @@ class Skandal():
         self.process_images()
         self.process_PLY()
 
+
 def clear():
     if (os.name == 'nt'):
-        c = os.system('cls')
+        os.system('cls')
     else:
-        c = os.system('clear')
+        os.system('clear')
 
 def bug_opencv_hack():
     img = cv2.imread('skandal.png', 0)
@@ -84,14 +86,13 @@ def menu_terminal():
     # First cam number
     cam_number_input()
     # Project name
-    name = name_input()
+    name_input()
 
     # Create directory, variable with this name
     skandal = Skandal()
-    conf = skandal.cf
     while True:
         clear()
-        print("Your project is {0}".format(conf["name"]))
+        print("Your project is {0}".format(skandal.conf["name"]))
         menu = """
         1. Set Skandal
                 Régler le scanner
@@ -110,12 +111,12 @@ def menu_terminal():
         print(("{0}".format(menu)))
 
         is_valid = False
-        while not is_valid :
-            try :
+        while not is_valid:
+            try:
                 choice = int(input('Enter your choice [0-6] : '))
                 is_valid = True
-            except ValueError as e :
-                print("This is not a valid integer.")
+            except ValueError as err:
+                print("{0} is not a valid integer.".format(err))
                 choice = None
             if choice == 1:
                 skandal.set_cam_position()
@@ -143,32 +144,30 @@ def menu_terminal():
 def name_input():
     clear()
     is_valid = False
-    while not is_valid :
-        try :
+    while not is_valid:
+        try:
             choice = input('\n\n  Enter your project name :  ')
             is_valid = True
-        except ValueError as e :
-            print(("'%s' is not a valid name." % e.args[0].split(": ")[1]))
+        except ValueError as err:
+            print(("'%s' is not a valid name." % err.args[0].split(": ")[1]))
     name = get_available_name(choice)
     print("\n\nYour project name is {0}\n\n".format(name))
     save_config("scan", "name", name)
-    return choice
 
 def cam_number_input():
     clear()
     is_valid = False
-    while not is_valid :
-        try :
+    while not is_valid:
+        try:
             print('Enter your camera device number,')
             print('Get it with "uvcdynctrl -l"')
-            choice = raw_input('\n\n  Camera device number :')
+            choice = input('\n\n  Camera device number :')
             is_valid = True
-        except ValueError as e :
-            print(("'%s' is not a valid name." % e.args[0].split(": ")[1]))
+        except ValueError as err:
+            print(("'%s' is not a valid name." % err.args[0].split(": ")[1]))
     save_config("scan", "cam", choice)
     print("\n\nYour camera device number is {0}\n\n".format(choice))
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     menu_terminal()
-

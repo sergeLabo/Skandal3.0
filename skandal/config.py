@@ -1,4 +1,4 @@
-#! /usr/bin/env python3
+#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # config.py
@@ -25,8 +25,8 @@
 import os
 import ast
 from configparser import SafeConfigParser
-import subprocess
 import numpy as np
+
 
 def load_config(ini):
     ''' Read *.ini file. Create dict with all parameter.
@@ -50,7 +50,7 @@ def load_config(ini):
     conf["a_name"] = get_available_name(conf["name"])
 
     # Create directory
-    Skandal, img_dir, txt_dir ,ply_dir = \
+    Skandal, img_dir, txt_dir, ply_dir = \
                                     directory_management(conf["a_name"])
     conf["img_dir"] = img_dir
     conf["txt_dir"] = txt_dir
@@ -71,7 +71,6 @@ def get_available_name(name):
     '''From raw name, get a name available to file name.'''
     name = name.encode('ascii', errors='ignore')
     name = str(name)[1:]
-    # TODO revoirpour accepter nombre si pas en premier
     name = "".join(c for c in name if c.isalpha())
     name = name[:12]
     return name
@@ -85,7 +84,6 @@ def get_project_list(image_file):
 
 def directory_management(name):
     ''' Create all needed directories if not. Return this directories.'''
-    # TODO: what append if a creative guy change the name config.py
     Skandal = os.path.dirname(os.getcwd()+"config.py")
     print("\nDirectories:")
     # Working directory
@@ -93,7 +91,7 @@ def directory_management(name):
         os.mkdir(Skandal + "/work")
     except:
         print("Directory exist")
-        pass
+
     # Master directories
     all_dir = [ "/image",
                 "/ply",
@@ -105,23 +103,20 @@ def directory_management(name):
             os.mkdir(Skandal + "/work" + d)
         except:
             print("Directory exist")
-            pass
 
     # Sub-directories
-    for d in ["/image/","/txt/"]:
+    for d in ["/image/", "/txt/"]:
         sub_dir = Skandal + "/work" + d + "p_" + str(name)
         try:
             os.mkdir(sub_dir)
         except:
             print("Directory exist")
-            pass
 
     img_dir = Skandal + "/work" + "/image/p_" + name
     txt_dir = Skandal + "/work" + "/txt/p_" + name
     ply_dir = Skandal + "/work" + "/ply"
-    stl_dir = Skandal + "/work" + "/stl"
 
-    return Skandal, img_dir, txt_dir ,ply_dir
+    return Skandal, img_dir, txt_dir, ply_dir
 
 def save_config(section, key, value):
     '''Save config in *.ini file with section, key, value.'''
@@ -136,12 +131,12 @@ def save_config(section, key, value):
     config.read("./scan.ini")
     config.set(section, key, val)
     with open("./scan.ini", 'w') as f:
-       config.write(f)
+        config.write(f)
     f.close()
     print("\n{1} = {2} saved in scan.ini in section {0}\n".format(section,
                                                                 key, val))
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     # conf is a dict with all parameter
     conf = load_config("./scan.ini")

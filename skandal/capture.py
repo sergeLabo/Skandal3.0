@@ -1,4 +1,4 @@
-#! /usr/bin/env python3
+#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # capture.py
@@ -22,29 +22,29 @@
 #
 #############################################################################
 
-import subprocess
+
 from time import time, sleep
 import cv2
 import numpy as np
 from window import Window
-from config import load_config, save_config
-from webcam import apply_all_cam_settings, apply_cam_setting
+from config import load_config
+from webcam import apply_all_cam_settings
 from arduino import Arduino
 
 
-COLOR = [("Brightness", 255, "brightness"), # 0
-        ("Saturation", 255, "saturation"), # 1
-        ("White Balance Temperature", 10000, "white_bal_temp"), # 2
-        ("Focus (absolute)", 40, "focus_abs")] # 3
+COLOR = [("Brightness", 255, "brightness"),
+        ("Saturation", 255, "saturation"),
+        ("Contrast", 10, "contrast"),
+        ("Focus (absolute)", 40, "focus_abs")]
 
-GEOM = [("Laser Left Right", 1, "laser"), # 0
-        ("Motor Axis H", 30, "motor_axis_h"), # 1
-        ("Motor Axis V", 300, "motor_axis_v"), # 2
-        ("Perspective H", 400, "persp_h"), # 3
-        ("Perspective V", 100, "persp_v"), # 4
-        ("Lateral Crop", 200, "cut_lateral"), # 5
-        ("Up Crop", 200, "cut_up"), # 6
-        ("Down Crop", 200, "cut_down")] # 7
+GEOM = [("Laser Left Right", 1, "laser"),
+        ("Motor Axis H", 30, "motor_axis_h"),
+        ("Motor Axis V", 300, "motor_axis_v"),
+        ("Perspective H", 400, "persp_h"),
+        ("Perspective V", 100, "persp_v"),
+        ("Lateral Crop", 200, "cut_lateral"),
+        ("Up Crop", 200, "cut_up"),
+        ("Down Crop", 200, "cut_down")]
 
 
 class Capture():
@@ -61,7 +61,8 @@ class Capture():
         # Init device
         self.capture = cv2.VideoCapture(int(self.cf["cam"]))
         self.set_capture()
-        self.arduino()
+        self.arduino = None
+        self.arduino_init()
         # Init windows: TODO scale en auto ?
         self.rawWin = Window("Raw", self.w, self.h, 0.6, None, cf, None)
         self.grayWin = Window("Gray", self.w, self.h, 0.5, COLOR, self.cf,
@@ -75,7 +76,7 @@ class Capture():
         self.capture.set(4, self.cf["height"])
         apply_all_cam_settings(self.cf)
 
-    def arduino(self):
+    def arduino_init(self):
         self.arduino = Arduino(self.cf["ard_dev"])
         # Left Laser on so we can see that it's ok
         self.arduino.write('G')
@@ -132,8 +133,9 @@ class Capture():
                     if way == "left":
                         # Shot every second until shot number
                         if nb_shot < self.cf["nb_img"]:
-                            nb_shot, t_shot = take_shot(self.cf["tempo"], top,t_shot,
-                            rotated, nb_shot, way, self.arduino, self.cf["img_dir"])
+                            nb_shot, t_shot = take_shot(self.cf["tempo"],
+                            t_shot, rotated, nb_shot, way, self.arduino,
+                            self.cf["img_dir"])
                         else:
                             if self.cf["double"]:
                                 way = "right"
@@ -143,8 +145,9 @@ class Capture():
                         set_laser(way, self.arduino)
                         # Shot every second until shot number
                         if nb_shot < self.cf["nb_img"] * 2:
-                            nb_shot, t_shot = take_shot(self.cf["tempo"], top,t_shot,
-                            rotated, nb_shot, way, self.arduino, self.cf["img_dir"])
+                            nb_shot, t_shot = take_shot(self.cf["tempo"],
+                            t_shot, rotated, nb_shot, way, self.arduino,
+                            self.cf["img_dir"])
                         else:
                             break
 
@@ -154,18 +157,18 @@ class Capture():
                     break
             else:
                 print("Webcam is busy")
-        print("\n{0} good shot in {1} seconds".format(\
-                nb_shot , int(time() - top)))
+        print("\n{0} good shot in {1} seconds".format(
+                nb_shot, int(time() - top)))
         cv2.destroyAllWindows()
 
     def close(self):
-        if self.ard == 1:
+        if self.cf["arduino"] == 1:
             set_laser("off", self.arduino)
         self.capture.release()
         cv2.destroyAllWindows()
 
 
-def take_shot(tempo, top, t_shot, im, nb_shot, way, arduino, im_dir):
+def take_shot(tempo, t_shot, im, nb_shot, way, arduino, im_dir):
     if time() - t_shot > tempo:
         # Shot
         if way == "right":
@@ -211,9 +214,9 @@ def laser_L_or_R(arduino, sw_old, sw_new):
         if sw_new == 1:
             # Right on
             arduino .write('D')
-            arduino .write('B')
+            arduino .write('G')
 
-if __name__=='__main__':
+if __name__ == '__main__':
     conf = load_config("./scan.ini")
     cap = Capture(conf)
     cap.set_cam_position()

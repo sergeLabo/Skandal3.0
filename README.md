@@ -19,7 +19,7 @@ http://wiki.labomedia.org/index.php/Cat%C3%A9gorie:Skandal
 
 
 ## Installation
-Tested on Linux Mint 15
+Tested on Linux Mint 15 and Linux Mint 17
 
 See:
 
